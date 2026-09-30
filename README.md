@@ -36,7 +36,9 @@ Scans target source files against the trained model to detect anti-patterns, poo
 
 ### Prerequisites 
 
+'''sh
    $ pip install clang transformers torch datasets
+'''
 
 ### Command Line Arguments
 
