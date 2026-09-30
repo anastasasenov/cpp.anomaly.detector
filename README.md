@@ -11,7 +11,16 @@ This experimental Python pipeline parses C/C++ source files (.h, .c, .cpp) using
     * Phase 3: Thresholding / Perplexity Calculation
 
     * Phase 4: Deviation Analysis & Reporting
-    
+
+#### Phase 1: AST Parsing & ASCII Sanitization
+
+Recursively scans target directories for C++ source and header files (.cpp, .hpp, .h, .cc, .cxx).
+
+Utilizes Clang's AST parser to separate classes, functions, methods, structs, templates, and enums alongside their code snippets.
+
+Automatically filters out comments and non-ASCII characters, reporting exact file and line numbers for any non-ASCII identifiers found.
+
+
 ### Command Line Arguments
 
 The script utilizes argparse for flexible CLI configuration:
