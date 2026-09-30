@@ -34,6 +34,10 @@ Establishes a dynamic statistical threshold (median + 2 * deviation) across vali
 
 Scans target source files against the trained model to detect anti-patterns, poor syntax, or hidden logic bugs with exact file and line number reporting.
 
+### Prerequisites 
+
+   $ pip install clang transformers torch datasets
+
 ### Command Line Arguments
 
 The script utilizes argparse for flexible CLI configuration:
