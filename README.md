@@ -1,4 +1,4 @@
-## Clang-based Documentation Generator (C++ Code-to-Comment Pipeline)
+## C/C++ Anomaly Detection Pipeline
 
 This experimental Python pipeline parses C/C++ source files (.h, .c, .cpp) using clang.cindex, trains a transformer model and detects code anomalies.
 
