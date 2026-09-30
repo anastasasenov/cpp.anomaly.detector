@@ -5,7 +5,7 @@ This experimental Python pipeline parses C/C++ source files (.h, .c, .cpp) using
 ### How It Works Under the Hood
     * Phase 1: Code Parsing
     * Phase 2: Model Training       
-    * Phase 3: Thresholding / Perplexity Calculation
+    * Phase 3: Thresholding / Pseudo-Perplexity Calculation
     * Phase 4: Deviation Analysis & Reporting
 
 #### Phase 1: AST Parsing & ASCII Sanitization
@@ -22,9 +22,9 @@ Initializes a RoBERTa-style or BERT-style Encoder architecture (AutoModelForMask
 
 Fine-tunes the model on segmented code datasets using Masked Language Modeling with reproducible seeding.
 
-#### Phase 3: Dynamic Thresholding & Perplexity Calculation
+#### Phase 3: Dynamic Thresholding & Pseudo-Perplexity Calculation
 
-Computes Pseudo-Perplexity (PPL) using cross-entropy loss across tokens.
+Computes Pseudo-Perplexity (PPPL) using cross-entropy loss across tokens.
 
 Applies a sliding window with a 10% overlap for files exceeding the model's token limit.
 
