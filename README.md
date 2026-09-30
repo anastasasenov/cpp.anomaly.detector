@@ -1,6 +1,6 @@
 ## C/C++ Anomaly Detection Pipeline
 
-This experimental Python pipeline parses C/C++ source files (.h, .c, .cpp) using clang.cindex, trains a transformer model and detects code anomalies.
+This experimental Python pipeline parses C/C++ source files (.h, .c, .cpp) using clang.cindex, trains a transformer model and detects code anomalies. Think of it as a digital bloodhound for code smells: it captures that exact moment when you stare at a pull request, sense that something is deeply wrong, but your brain refuses to formulate why in a proper sentence. Our model detects the anomalies your intuition smelled first.
 
 ### How It Works Under the Hood
     * Phase 1: Code Parsing
