@@ -3,13 +3,9 @@
 This experimental Python pipeline parses C/C++ source files (.h, .c, .cpp) using clang.cindex, trains a transformer model and detects code anomalies.
 
 ### How It Works Under the Hood
-
     * Phase 1: Code Parsing
-
-    * Phase 2: Model Training
-        
+    * Phase 2: Model Training       
     * Phase 3: Thresholding / Perplexity Calculation
-
     * Phase 4: Deviation Analysis & Reporting
 
 #### Phase 1: AST Parsing & ASCII Sanitization
@@ -20,6 +16,23 @@ Utilizes Clang's AST parser to separate classes, functions, methods, structs, te
 
 Automatically filters out comments and non-ASCII characters, reporting exact file and line numbers for any non-ASCII identifiers found.
 
+#### Phase 2: Model Training (Encoder MLM Fine-Tuning)
+
+Initializes a RoBERTa-style or BERT-style Encoder architecture (AutoModelForMaskedLM).
+
+Fine-tunes the model on segmented code datasets using Masked Language Modeling with reproducible seeding.
+
+#### Phase 3: Dynamic Thresholding & Perplexity Calculation
+
+Computes Pseudo-Perplexity (PPL) using cross-entropy loss across tokens.
+
+Applies a sliding window with a 10% overlap for files exceeding the model's token limit.
+
+Establishes a dynamic statistical threshold (median + 2 * deviation) across validation splits to flag anomalies.
+
+#### Phase 4: Deviation Analysis & Reporting
+
+Scans target source files against the trained model to detect anti-patterns, poor syntax, or hidden logic bugs with exact file and line number reporting.
 
 ### Command Line Arguments
 
