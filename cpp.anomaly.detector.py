@@ -383,10 +383,6 @@ def main():
         model, tokenizer = trainEncoder(datasets, args.model, args.mlm, seed=42)
         logging.info("Phase_3: Pseudo-Perplexity ...")
         threshold = calcThreshold( model, tokenizer, datasets)
-    
-        model.save_pretrained(args.model_out)
-        tokenizer.save_pretrained(args.model_out)
-        logging.info(f"Model saved {args.model_out}")
 
     logging.info("Phase_4: Reporting ...")
     logging.info(f"Threshold (M + 2D): {threshold:.2f}")
