@@ -15,6 +15,7 @@ from transformers import AutoTokenizer
 from transformers import AutoModelForMaskedLM
 from transformers import DataCollatorForLanguageModeling
 from transformers import Trainer, TrainingArguments
+from transformers import AutoModelForSequenceClassification
 import clang.cindex
 import warnings
 
@@ -211,8 +212,9 @@ def trainEncoder(
         data_collator=data_collator,
     )
 
-    logging.info("MLM fine-tuning...")
+    logging.info("Fine-tuning...")
     trainer.train()
+
     return model, tokenizer
 
 
@@ -300,7 +302,15 @@ def setupLogging(
     logger = logging.getLogger()
     logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
     h.setFormatter(formatter)
-    logger.addHandler(h)
+    if not logger.handlers:
+        logger.addHandler(h)
+
+def loadModel(dirModel: str):
+    loaded_tokenizer = AutoTokenizer.from_pretrained(dirModel)
+    loaded_model = AutoModelForSequenceClassification.from_pretrained(dirModel)
+    logging.info(f"Model loaded {dirModel}")
+    logging.info("Phase_1/2 skipped")
+    return loaded_model, loaded_tokenizer
 
 # entry point
 def main():
@@ -310,20 +320,30 @@ def main():
     parser.add_argument("--dir", required=True, help="Directory containing the C++ (.h/.cpp) files to be processed")
     parser.add_argument("--std", default="c++17", help="C/C++ language standard (e.g. 'c11', 'c++17')")
     parser.add_argument("--mlm", type=float, default=15.0, help="Masked Language Modeling probability percentage (Default: 15)")
+    parser.add_argument("--model-in", default="", help="Path to the trained model folder")
+    parser.add_argument("--model-out", default="", help="Path to the folder where the trained model will be saved")
     parser.add_argument("--log-file", help="Path to the log file")
     parser.add_argument("--log-level", default="INFO", help="Log level (INFO, DEBUG, WARNING, ERROR)")
     args = parser.parse_args()
 
     setupLogging(args.log_file, args.log_level)
     
-    logging.info("Phase_1: Parsing ...")
-    analyzer = CParser(std_flag=args.std)
-    datasets = scanDirectory(args.dir, analyzer)
+    if len(args.model_in) > 0:
+        model, tokenizer = loadModel(args.model_in)
+        datasets = {}
+    else:
+        logging.info("Phase_1: Parsing ...")
+        analyzer = CParser(std_flag=args.std)
+        datasets = scanDirectory(args.dir, analyzer)
+        logging.info("Phase_2: Training ...")
+        model, tokenizer = trainEncoder(datasets, args.model, args.mlm, seed=42)
+    
+    if len(args.model_out) > 0:
+        model.save_pretrained(args.model_out)
+        tokenizer.save_pretrained(args.model_out)
+        logging.info(f"Model saved {args.model_out}")
 
-    logging.info("Phase_2: Training ...")
-    model, tokenizer = trainEncoder(datasets, args.model, args.mlm, seed=42)
-
-    logging.info("Phase_3: Perplexity ...")
+    logging.info("Phase_3: Pseudo-Perplexity ...")
     validation_ppls = []
     for cat, items in datasets.items():
         for item in items:
