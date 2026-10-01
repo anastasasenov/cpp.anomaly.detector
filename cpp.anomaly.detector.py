@@ -220,42 +220,51 @@ def trainEncoder(
 
 
 
-# P3/4: Perplexity & Anomaly Detection
-def computePerplexity(
+# P3/4: Pseudo-Perplexity & Anomaly Detection
+def computePseudoPperplexity(
     text: str,
-    model, tokenizer,
-    max_length: int = 512,
-    overlap: float = 0.1) -> float:
+    model,
+    tokenizer,
+    max_length: int = 512) -> float:
 
     device = model.device
-    tokens = tokenizer(text, return_tensors="pt", truncation=False)
-    input_ids = tokens["input_ids"][0]
+    tokens = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_length)
+    input_ids = tokens["input_ids"][0].to(device)
     
     seq_len = input_ids.size(0)
-    if seq_len == 0:
+    if seq_len <= 2:  # Само [CLS] и [SEP] или празен вход
         return 0.0
 
-    stride = int(max_length * (1 - overlap))
-    nlls = []
+    special_tokens_ids = set(tokenizer.all_special_ids)
+    total_nll = 0.0
+    valid_tokens_count = 0
 
-    for i in range(0, seq_len, stride):
-        begin_loc = max(i + stride - max_length, 0)
-        end_loc = min(i + stride, seq_len)
-        chunk_ids = input_ids[begin_loc:end_loc].unsqueeze(0).to(device)
-        
-        target_ids = chunk_ids.clone()
+    model.eval()
+    with torch.no_grad():
+        for i in range(seq_len):
+            token_id = input_ids[i].item()
+            # Пропускаме специалните токени (напр. [CLS], [SEP], [PAD])
+            if token_id in special_tokens_ids:
+                continue
 
-        with torch.no_grad():
-            outputs = model(chunk_ids, labels=target_ids)
-            neg_log_likelihood = outputs.loss * chunk_ids.size(1)
-            nlls.append(neg_log_likelihood)
+            # Създаваме копие на входните индекси и маскираме текущия токен
+            masked_input_ids = input_ids.clone()
+            masked_input_ids[i] = tokenizer.mask_token_id
 
-        if end_loc == seq_len:
-            break
+            outputs = model(masked_input_ids.unsqueeze(0))
+            logits = outputs.logits[0, i, :]  # Вземаме logits за маскираната позиция
+            
+            log_probs = torch.log_softmax(logits, dim=-1)
+            nll = -log_probs[token_id].item()
+            
+            total_nll += nll
+            valid_tokens_count += 1
 
-    total_nll = torch.stack(nlls).sum()
-    ppl = torch.exp(total_nll / seq_len).item()
-    return ppl
+    if valid_tokens_count == 0:
+        return 0.0
+
+    pppl = math.exp(total_nll / valid_tokens_count)
+    return pppl
 
 def calcThreshold(
     model,
@@ -268,7 +277,7 @@ def calcThreshold(
     for cat, items in datasets.items():
         for item in items:
             if item[S_ITEM].strip():
-                ppl = computePerplexity(item[S_ITEM], model, tokenizer)
+                ppl = computePseudoPperplexity(item[S_ITEM], model, tokenizer)
                 validation_ppls.append(ppl)
     if validation_ppls:
         mean_m = sum(validation_ppls) / len(validation_ppls)
@@ -305,11 +314,11 @@ def runAnalyze(
                     with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
                         content = f.read()
                     
-                    file_ppl = computePerplexity(content, model, tokenizer)
-                    logging.info(f"File: {filepath} | Perplexity: {file_ppl:.2f}")
+                    file_ppl = computePseudoPperplexity(content, model, tokenizer)
+                    logging.info(f"File: {filepath} | Pseudo-Perplexity: {file_ppl:.2f}")
 
                     if file_ppl > threshold:
-                        logging.warning(f"[ANOMALY] File exceeds perplexity threshold ({file_ppl:.2f} > {threshold}): {filepath}")
+                        logging.warning(f"[ANOMALY] File exceeds threshold ({file_ppl:.2f} > {threshold}): {filepath}")
                 except Exception as e:
                     logging.error(f"Error analyzing file {filepath}: {e}")
 
