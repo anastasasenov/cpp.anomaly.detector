@@ -232,7 +232,7 @@ def computePseudoPperplexity(
     input_ids = tokens["input_ids"][0].to(device)
     
     seq_len = input_ids.size(0)
-    if seq_len <= 2:  # Само [CLS] и [SEP] или празен вход
+    if seq_len <= 2:
         return 0.0
 
     special_tokens_ids = set(tokenizer.all_special_ids)
@@ -243,11 +243,9 @@ def computePseudoPperplexity(
     with torch.no_grad():
         for i in range(seq_len):
             token_id = input_ids[i].item()
-            # Пропускаме специалните токени (напр. [CLS], [SEP], [PAD])
             if token_id in special_tokens_ids:
                 continue
 
-            # Създаваме копие на входните индекси и маскираме текущия токен
             masked_input_ids = input_ids.clone()
             masked_input_ids[i] = tokenizer.mask_token_id
 
