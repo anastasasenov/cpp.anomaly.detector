@@ -24,6 +24,7 @@ warnings.filterwarnings("ignore", message="mtime may not be reliable on this fil
 
 # globals
 S_ITEM = "snippet"
+F_THRESHOLD = "threshold.txt"
 
 # P1: Data/AST Parser 
 class CParser:
@@ -256,6 +257,28 @@ def computePerplexity(
     ppl = torch.exp(total_nll / seq_len).item()
     return ppl
 
+def calcThreshold(
+    model,
+    tokenizer,
+    datasets):
+    
+    threshold = 100.0
+    
+    validation_ppls = []
+    for cat, items in datasets.items():
+        for item in items:
+            if item[S_ITEM].strip():
+                ppl = computePerplexity(item[S_ITEM], model, tokenizer)
+                validation_ppls.append(ppl)
+    if validation_ppls:
+        mean_m = sum(validation_ppls) / len(validation_ppls)
+        std_d = math.sqrt(sum((x - mean_m) ** 2 for x in validation_ppls) / len(validation_ppls))
+        threshold = mean_m + (2 * std_d)
+        logging.info(f"Threshold -> Mean (M): {mean_m:.2f}, Std (D): {std_d:.2f}")
+    else:
+        logging.warning("No snippets")
+
+    return threshold
 
 def runAnalyze(
     root_dir: str,
@@ -305,12 +328,33 @@ def setupLogging(
     if not logger.handlers:
         logger.addHandler(h)
 
-def loadModel(dirModel: str):
+def saveModel(
+    dirModel: str,
+    model,
+    tokenizer,
+    threshold):
+
+    model.save_pretrained(dirModel)
+    tokenizer.save_pretrained(dirModel)
+    logging.info(f"Model saved {dirModel}")
+
+    with open(os.path.join(dirModel, F_THRESHOLD), "w") as f:
+        f.write(str(threshold))
+
+    return
+
+def loadModel(
+    dirModel: str):
+
     loaded_tokenizer = AutoTokenizer.from_pretrained(dirModel)
     loaded_model = AutoModelForSequenceClassification.from_pretrained(dirModel)
     logging.info(f"Model loaded {dirModel}")
-    logging.info("Phase_1/2 skipped")
-    return loaded_model, loaded_tokenizer
+    
+    threshold = 100.0
+    with open(os.path.join(dirModel, F_THRESHOLD), "r") as f:
+        threshold = float(f.read())
+
+    return loaded_model, loaded_tokenizer, threshold
 
 # entry point
 def main():
@@ -327,40 +371,29 @@ def main():
     args = parser.parse_args()
 
     setupLogging(args.log_file, args.log_level)
-    
+
     if len(args.model_in) > 0:
-        model, tokenizer = loadModel(args.model_in)
-        datasets = {}
+        model, tokenizer, threshold = loadModel(args.model_in)
+        logging.info("Phase_1/2/3 skipped")
     else:
         logging.info("Phase_1: Parsing ...")
         analyzer = CParser(std_flag=args.std)
         datasets = scanDirectory(args.dir, analyzer)
         logging.info("Phase_2: Training ...")
         model, tokenizer = trainEncoder(datasets, args.model, args.mlm, seed=42)
+        logging.info("Phase_3: Pseudo-Perplexity ...")
+        threshold = calcThreshold( model, tokenizer, datasets)
     
-    if len(args.model_out) > 0:
         model.save_pretrained(args.model_out)
         tokenizer.save_pretrained(args.model_out)
         logging.info(f"Model saved {args.model_out}")
 
-    logging.info("Phase_3: Pseudo-Perplexity ...")
-    validation_ppls = []
-    for cat, items in datasets.items():
-        for item in items:
-            if item[S_ITEM].strip():
-                ppl = computePerplexity(item[S_ITEM], model, tokenizer)
-                validation_ppls.append(ppl)
-    if validation_ppls:
-        mean_m = sum(validation_ppls) / len(validation_ppls)
-        std_d = math.sqrt(sum((x - mean_m) ** 2 for x in validation_ppls) / len(validation_ppls))
-        threshold = mean_m + (2 * std_d)
-        logging.info(f"Threshold -> Mean (M): {mean_m:.2f}, Std (D): {std_d:.2f}, Threshold calculated (M + 2D): {threshold:.2f}")
-    else:
-        threshold = 100.0
-        logging.warning("No snippets, default threshold: 100.0")
-
     logging.info("Phase_4: Reporting ...")
+    logging.info(f"Threshold (M + 2D): {threshold:.2f}")
     runAnalyze(args.dir, model, tokenizer, threshold)
+
+    if len(args.model_out) > 0:
+        saveModel(args.model_out, model, tokenizer, threshold)
 
 if __name__ == "__main__":
 
