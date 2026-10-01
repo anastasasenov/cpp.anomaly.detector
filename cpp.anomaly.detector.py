@@ -250,7 +250,7 @@ def computePseudoPperplexity(
             masked_input_ids[i] = tokenizer.mask_token_id
 
             outputs = model(masked_input_ids.unsqueeze(0))
-            logits = outputs.logits[0, i, :]  # Вземаме logits за маскираната позиция
+            logits = outputs.logits[0, i, :]
             
             log_probs = torch.log_softmax(logits, dim=-1)
             nll = -log_probs[token_id].item()
