@@ -3,10 +3,6 @@
 This experimental Python pipeline parses C/C++ source files (.h, .c, .cpp) using clang.cindex, trains a transformer model and detects code anomalies. Think of it as a digital bloodhound for code smells: it captures that exact moment when you stare at a pull request, sense that something is deeply wrong, but your brain refuses to formulate why in a proper sentence. Our model detects the anomalies your intuition smelled first.
 
 ### How It Works Under the Hood
-    * Phase 1: Code Parsing
-    * Phase 2: Model Training       
-    * Phase 3: Thresholding / Pseudo-Perplexity Calculation
-    * Phase 4: Deviation Analysis & Reporting
 
 #### Phase 1: AST Parsing & ASCII Sanitization
 
@@ -46,12 +42,13 @@ The script utilizes argparse for flexible CLI configuration:
     --dir       The path to the directory containing the .h and .cpp files to be processed.
     --std       ( optional ) C/C++ language standard (e.g. 'c11', 'c++17')
     --mlm       ( optional ) Masked Language Modeling probability percentage (Default: 15)
+    --mfile     ( optional ) Path to the file where the trained model will be saved.
     --log-file  ( optional ) Path to the log file.
     --log-level ( optional ) Log level (INFO, DEBUG, WARNING, ERROR).
    
 ### Usage
 
-    $ ./cpp.anomaly.detector.py --model codebert --dir ./src --std c99 --mlm 15 --log-file log.txt --log-level INFO
+    $ ./cpp.anomaly.detector.py --model codebert --dir ./src --std c99
     
 ### License
 
