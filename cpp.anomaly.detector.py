@@ -393,12 +393,12 @@ def main():
         logging.info("Phase_3: Pseudo-Perplexity ...")
         threshold = calcThreshold( model, tokenizer, datasets)
 
-    logging.info("Phase_4: Reporting ...")
-    logging.info(f"Threshold (M + 2D): {threshold:.2f}")
-    runAnalyze(args.dir, model, tokenizer, threshold)
-
     if len(args.model_out) > 0:
         saveModel(args.model_out, model, tokenizer, threshold)
+    else:
+        logging.info("Phase_4: Reporting ...")
+        logging.info(f"Threshold (M + 2D): {threshold:.2f}")
+        runAnalyze(args.dir, model, tokenizer, threshold)
 
 if __name__ == "__main__":
 
