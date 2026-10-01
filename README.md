@@ -22,6 +22,8 @@ Fine-tunes the model on segmented code datasets using Masked Language Modeling w
 
 Computes Pseudo-Perplexity (PPPL) using cross-entropy loss across tokens.
 
+    PPPL = exp( - 1/N * sum_{i=1}^N log P(w_i | W \setminus w_i) )
+
 Applies a sliding window with a 10% overlap for files exceeding the model's token limit.
 
 Establishes a dynamic statistical threshold (median + 2 * deviation) across validation splits to flag anomalies.
