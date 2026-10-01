@@ -15,7 +15,6 @@ from transformers import AutoTokenizer
 from transformers import AutoModelForMaskedLM
 from transformers import DataCollatorForLanguageModeling
 from transformers import Trainer, TrainingArguments
-from transformers import AutoModelForSequenceClassification
 import clang.cindex
 import warnings
 
@@ -30,8 +29,6 @@ F_THRESHOLD = "threshold.txt"
 class CParser:
 
     def __init__(self, std_flag: str):
-        if clang is None:
-            raise ImportError("Required clang package!")
         self.std_flag = std_flag
         try:
             self.index = clang.cindex.Index.create()
@@ -354,7 +351,7 @@ def loadModel(
     dirModel: str):
 
     loaded_tokenizer = AutoTokenizer.from_pretrained(dirModel)
-    loaded_model = AutoModelForSequenceClassification.from_pretrained(dirModel)
+    loaded_model = AutoModelForMaskedLM.from_pretrained(dirModel)
     logging.info(f"Model loaded {dirModel}")
     
     threshold = 100.0
