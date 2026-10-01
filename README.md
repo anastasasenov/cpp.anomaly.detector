@@ -42,7 +42,8 @@ The script utilizes argparse for flexible CLI configuration:
     --dir       The path to the directory containing the .h and .cpp files to be processed.
     --std       ( optional ) C/C++ language standard (e.g. 'c11', 'c++17')
     --mlm       ( optional ) Masked Language Modeling probability percentage (Default: 15)
-    --model-out ( optional ) Path to folder where the trained model will be saved.
+    --model-in  ( optional ) Path to the trained model folder.
+    --model-out ( optional ) Path to the folder where the trained model will be saved.
     --log-file  ( optional ) Path to the log file.
     --log-level ( optional ) Log level (INFO, DEBUG, WARNING, ERROR).
    
